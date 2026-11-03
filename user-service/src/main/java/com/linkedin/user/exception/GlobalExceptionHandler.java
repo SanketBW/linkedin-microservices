@@ -30,9 +30,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiResponse> handleAccessDenied(
-            AccessDeniedException ex) {
-
+    public ResponseEntity<ApiResponse> handleAccessDenied(AccessDeniedException ex) {
         ApiResponse response = new ApiResponse(ex.getMessage(), false);
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }

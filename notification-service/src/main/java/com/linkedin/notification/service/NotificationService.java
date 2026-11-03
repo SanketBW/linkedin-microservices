@@ -48,6 +48,13 @@ public class NotificationService {
         log.info("Notification saved: type={}, recipientId={}", type, recipientId);
     }
 
+    @Transactional
+    public void deleteAllNotificationsOf(Long userId) {
+
+        repository.deleteByRecipientIdOrActorId(userId, userId);
+        log.info("Deleted notifications for userId={}", userId);
+    }
+
     // TODO: Implement JWT, API's to retrieve notifications, (mark individual/all notifications as read) & more
 
 

@@ -12,8 +12,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-public interface ConnectionRepository
-        extends JpaRepository<Connection, Long> {
+public interface ConnectionRepository extends JpaRepository<Connection, Long> {
 
     // Find a relationship in either direction
     @Query("""
@@ -81,4 +80,6 @@ public interface ConnectionRepository
     ORDER BY MIN(degree), user_id
     """, nativeQuery = true)
     List<NetworkConnection> findNetworkConnections(@Param("userId") Long userId);
+
+    void deleteBySenderIdOrReceiverId(Long senderId, Long receiverId);
 }

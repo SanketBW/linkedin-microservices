@@ -10,7 +10,7 @@ public class KafkaTopicConfig {
 
     @Bean
     public NewTopic postEventsTopic() {
-        return TopicBuilder.name("post-events").partitions(3).replicas(1)        // one broker in dev
+        return TopicBuilder.name("post-events").partitions(3).replicas(1)
                 .build();
     }
 

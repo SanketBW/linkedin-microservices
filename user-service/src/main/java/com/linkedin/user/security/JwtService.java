@@ -53,9 +53,6 @@ public class JwtService {
         return Long.valueOf(claim.getSubject());
     }
 
-    public String getEmailFromToken(String token) {
-        return extractClaims(token).get("email", String.class);
-    }
 
     public boolean isTokenValid(String token){
         try{

@@ -1,19 +1,24 @@
 
 package com.linkedin.user.service.impl;
 
+import com.linkedin.user.dto.PageResponse;
 import com.linkedin.user.dto.RegisterRequest;
 import com.linkedin.user.dto.UpdateProfileRequest;
 import com.linkedin.user.dto.UserResponse;
 import com.linkedin.user.entity.User;
 import com.linkedin.user.exception.EmailAlreadyExistsException;
 import com.linkedin.user.exception.ResourceNotFoundException;
+import com.linkedin.user.producer.UserEventProducer;
 import com.linkedin.user.repository.UserRepository;
 import com.linkedin.user.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -24,6 +29,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final ModelMapper modelMapper;
+    private final UserEventProducer userEventProducer;
 
     @Override
     public UserResponse registerUser(RegisterRequest request) {
@@ -44,6 +50,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserResponse getUser(Long id) {
+        User user = this.userRepository.findById(id).
+                    orElseThrow(()-> new ResourceNotFoundException("User not found with id: " + id));
+
+        return this.modelMapper.map(user, UserResponse.class);
+    }
+
+    @Override
     public List<UserResponse> getAllUser() {
         List<User> users = this.userRepository.findAll();
         return users.stream().map((user -> this.modelMapper.map(user, UserResponse.class))).toList();
@@ -55,6 +69,22 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         return this.modelMapper.map(user, UserResponse.class);
+    }
+
+    @Override
+    public PageResponse searchByUser(String keyword, Pageable pageable) {
+        Page<User> userPage = this.userRepository
+                .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(keyword.trim(), keyword.trim(), pageable);
+
+        Page<UserResponse> users = userPage.map(user -> modelMapper.map(user, UserResponse.class));
+
+        return new PageResponse(
+                users.getContent(),
+                users.getNumber(),
+                users.getSize(),
+                users.getTotalElements(),
+                users.getTotalPages()
+        );
     }
 
     @Override
@@ -74,6 +104,10 @@ public class UserServiceImpl implements UserService {
             user.setHeadline(request.getHeadline());
         }
 
+        if (request.getProfilePictureUrl() != null) {
+            user.setProfilePictureUrl(request.getProfilePictureUrl());
+        }
+
         if (request.getAbout() != null) {
             user.setAbout(request.getAbout());
         }
@@ -82,4 +116,18 @@ public class UserServiceImpl implements UserService {
 
         return this.modelMapper.map(updatedUser, UserResponse.class);
     }
+
+    @Override
+    @Transactional
+    public void deleteMyAccount(String email) {
+        User user = this.userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(()-> new ResourceNotFoundException("User not found!"));
+
+        Long userId = user.getId();
+
+        this.userRepository.delete(user);
+
+        userEventProducer.publishUserDeleted(userId);
+    }
+
 }

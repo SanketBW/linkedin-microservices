@@ -19,4 +19,7 @@ public class UpdateProfileRequest {
 
     @Size(max = 2000)
     private String about;
+
+    @Size(max = 500)
+    private String profilePictureUrl;
 }
