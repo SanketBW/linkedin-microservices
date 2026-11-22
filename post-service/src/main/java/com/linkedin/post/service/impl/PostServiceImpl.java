@@ -19,7 +19,6 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,14 +30,14 @@ import java.util.UUID;
 @Transactional
 public class PostServiceImpl implements PostService {
 
-    private static final int MAX_PAGE_SIZE = 50;
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final PostEventProducer postEventProducer;
     private final PostRepository postRepository;
     private final ModelMapper modelMapper;
 
     @Override
-    @CacheEvict(value = "postFeed", allEntries = true)
+    @CacheEvict(value = {"posts", "postFeed"} , allEntries = true)
     public PostResponse createPost(Long userId, CreatePostRequest request) {
 
         Post post = new Post();
@@ -69,22 +68,23 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(
-            value = "postFeed",
-            key = "#pageable.pageNumber + '-' + " + "T(java.lang.Math).min(#pageable.pageSize, 50)")
-    public PageResponse<PostResponse> getAllPosts(Pageable pageable) {
-        Pageable safePageable = newestFirst(pageable);
-        Page<PostResponse> posts = postRepository
-                .findAll(safePageable).map((post)-> modelMapper.map(post, PostResponse.class));
-        return PageResponse.from(posts);
-    }
+    @Cacheable(value = "posts", key = "#userId + ':' + #pageable.pageNumber + ':' + #pageable.pageSize")
+    public PageResponse<PostResponse> getPostsByUser(Long userId, Pageable pageable) {
 
-    @Override
-    @Transactional(readOnly = true)
-    public Page<PostResponse> getMyPosts(Long userId, Pageable pageable) {
-        return postRepository
-                .findByUserIdOrderByCreatedAtDesc(userId, pageable)
-                .map((post)-> modelMapper.map(post, PostResponse.class));
+        Pageable safePageable = PageRequest.of(pageable.getPageNumber(),
+                                                Math.min(pageable.getPageSize(), MAX_PAGE_SIZE));
+
+        Page<PostResponse> posts = postRepository
+                .findByUserIdOrderByCreatedAtDesc(userId, safePageable)
+                .map(post -> modelMapper.map(post, PostResponse.class));
+
+        return new PageResponse<>(
+                posts.getContent(),
+                posts.getNumber(),
+                posts.getSize(),
+                posts.getTotalElements(),
+                posts.getTotalPages()
+        );
     }
 
     @Override
@@ -107,12 +107,6 @@ public class PostServiceImpl implements PostService {
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found with id: " + postId));
         checkOwnership(post, userId);
         postRepository.delete(post);
-    }
-
-    private Pageable newestFirst(Pageable pageable) {
-        return PageRequest.of(pageable.getPageNumber(),
-                Math.min(pageable.getPageSize(), MAX_PAGE_SIZE),
-                Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 
     private void checkOwnership(Post post, Long userId) {

@@ -8,7 +8,7 @@ import com.linkedin.post.payload.ApiResponse;
 import com.linkedin.post.service.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,18 +36,27 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping
-    public ResponseEntity<PageResponse<PostResponse>> getAllPosts(Pageable pageable)
-    {
-        return ResponseEntity.ok(postService.getAllPosts(pageable));
+    @GetMapping("/feed/{userId}")
+    public ResponseEntity<PageResponse<PostResponse>> getPostsByUser(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return ResponseEntity.ok(postService.getPostsByUser(userId, pageable));
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<Page<PostResponse>> getMyPosts(Authentication auth, Pageable pageable)
-    {
+    @GetMapping("/feed/me")
+    public ResponseEntity<PageResponse<PostResponse>> getMyPosts(
+            Authentication auth,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
         Long userId = Long.valueOf(auth.getName());
-        Page<PostResponse> response = postService.getMyPosts(userId, pageable);
-        return ResponseEntity.ok(response);
+        Pageable pageable = PageRequest.of(page, size);
+
+        return ResponseEntity.ok(postService.getPostsByUser(userId, pageable));
     }
 
     @PutMapping("/{id}")

@@ -13,9 +13,7 @@ import java.time.LocalDateTime;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class PostResponse implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class PostResponse {
 
     private Long id;
     private Long userId;
