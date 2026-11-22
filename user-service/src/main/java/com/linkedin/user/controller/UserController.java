@@ -71,6 +71,6 @@ public class UserController {
     public ResponseEntity<ApiResponse> deleteAccount(Authentication auth){
         this.userService.deleteMyAccount(auth.getName());
         ApiResponse apiResponse = new ApiResponse("Account deleted successfully", true);
-        return new ResponseEntity<>(apiResponse, HttpStatus.NO_CONTENT);
+        return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
 }
