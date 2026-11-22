@@ -5,6 +5,7 @@ import com.linkedin.connection.repository.ConnectionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -13,6 +14,7 @@ public class UserEventConsumer {
 
     @KafkaListener(topics = "user-events", groupId = "connection-service",
     properties = "spring.json.value.default.type=com.linkedin.connection.event.UserDeletedEvent")
+    @Transactional
     public void handleUserDeleted(UserDeletedEvent event) {
 
         if ("USER_DELETED".equals(event.eventType()))
