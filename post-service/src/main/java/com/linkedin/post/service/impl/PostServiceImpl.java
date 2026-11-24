@@ -23,6 +23,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -49,8 +50,8 @@ public class PostServiceImpl implements PostService {
         PostCreatedEvent event = new PostCreatedEvent(
                 UUID.randomUUID().toString(),
                 saved.getId(),
-                saved.getUserId(),
-                saved.getCreatedAt()
+                userId,
+                LocalDateTime.now()
         );
         postEventProducer.publishPostCreated(event);
         return modelMapper.map(saved, PostResponse.class);

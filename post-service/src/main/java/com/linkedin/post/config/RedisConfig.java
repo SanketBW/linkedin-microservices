@@ -18,8 +18,7 @@ import java.time.Duration;
 public class RedisConfig {
 
     @Bean
-    public RedisCacheManager cacheManager(
-            RedisConnectionFactory connectionFactory) {
+    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
 
         var validator = BasicPolymorphicTypeValidator.builder()
                 .allowIfSubType("com.linkedin.post.")

@@ -2,6 +2,7 @@ package com.linkedin.post.service.impl;
 
 import com.linkedin.post.dto.CommentResponse;
 import com.linkedin.post.dto.CreateCommentRequest;
+import com.linkedin.post.dto.PageResponse;
 import com.linkedin.post.entity.Post;
 import com.linkedin.post.entity.PostComment;
 import com.linkedin.post.event.CommentCreatedEvent;
@@ -13,7 +14,9 @@ import com.linkedin.post.service.PostCommentService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -26,6 +29,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional
 public class PostCommentServiceImpl implements PostCommentService {
+
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final PostCommentRepository commentRepository;
     private final PostRepository postRepository;
     private final ModelMapper modelMapper;
@@ -46,25 +52,40 @@ public class PostCommentServiceImpl implements PostCommentService {
 
         if (!post.getUserId().equals(userId)) {
             // Create Kafka event
-            CommentCreatedEvent event = new CommentCreatedEvent(UUID.randomUUID().toString(),
-                    savedComment.getId(), postId, userId, post.getUserId(), LocalDateTime.now()
+            CommentCreatedEvent event = new CommentCreatedEvent(
+                    UUID.randomUUID().toString(),
+                    savedComment.getId(),
+                    postId,
+                    userId,
+                    post.getUserId(),
+                    LocalDateTime.now()
             );
             // Publish event
             postEventProducer.publishCommentCreated(event);
         }
-
 
         return modelMapper.map(savedComment, CommentResponse.class);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<CommentResponse> getComments(Long postId, Pageable pageable) {
+    @Cacheable(value = "postComments")
+    public PageResponse<CommentResponse> getComments(Long postId, Pageable pageable) {
         postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found with id: " + postId));
-        return commentRepository
-                .findByPostIdOrderByCreatedAtDesc(postId, pageable)
+
+        Pageable safePageable = PageRequest.of(pageable.getPageNumber(),
+                                                Math.min(pageable.getPageSize(), MAX_PAGE_SIZE));
+        Page<CommentResponse> comments = commentRepository.findByPostIdOrderByCreatedAtDesc(postId, safePageable)
                 .map(comment -> modelMapper.map(comment, CommentResponse.class));
+
+        return new PageResponse<>(
+                comments.getContent(),
+                comments.getNumber(),
+                comments.getSize(),
+                comments.getTotalElements(),
+                comments.getTotalPages()
+        );
     }
 
     @Override

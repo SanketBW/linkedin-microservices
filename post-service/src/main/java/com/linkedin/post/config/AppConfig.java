@@ -15,17 +15,4 @@ public class AppConfig {
     public ModelMapper modelMapper(){
         return new ModelMapper();
     }
-
-    @Bean
-    public PageableHandlerMethodArgumentResolverCustomizer paginationCustomizer(
-            @Value("${app.pagination.default-page}") int defaultPage,
-            @Value("${app.pagination.default-size}") int defaultSize,
-            @Value("${app.pagination.max-page-size}") int maxPageSize) {
-
-        return resolver -> {
-            resolver.setFallbackPageable(PageRequest.of(defaultPage, defaultSize,
-                            Sort.by(Sort.Direction.DESC, "createdAt")));
-            resolver.setMaxPageSize(maxPageSize);
-        };
-    }
 }

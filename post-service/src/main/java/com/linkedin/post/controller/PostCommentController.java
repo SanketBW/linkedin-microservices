@@ -2,6 +2,7 @@ package com.linkedin.post.controller;
 
 import com.linkedin.post.dto.CommentResponse;
 import com.linkedin.post.dto.CreateCommentRequest;
+import com.linkedin.post.dto.PageResponse;
 import com.linkedin.post.service.PostCommentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +27,9 @@ public class PostCommentController {
     }
 
     @GetMapping
-    public Page<CommentResponse> getComments(@PathVariable Long postId, @RequestParam(defaultValue = "0") int page,
-                                             @RequestParam(defaultValue = "10") int size)
+    public PageResponse<CommentResponse> getComments(@PathVariable Long postId,
+                                                     @RequestParam(defaultValue = "0") int page,
+                                                     @RequestParam(defaultValue = "10") int size)
     {
         Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
         return commentService.getComments(postId, pageable);

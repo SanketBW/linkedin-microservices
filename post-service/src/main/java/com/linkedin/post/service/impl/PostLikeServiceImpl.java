@@ -42,8 +42,12 @@ public class PostLikeServiceImpl implements PostLikeService {
             postLikeRepository.saveAndFlush(like);
 
             if (!post.getUserId().equals(userId)) {
-                PostLikedEvent event = new PostLikedEvent(UUID.randomUUID().toString(),
-                        postId, userId, post.getUserId(), LocalDateTime.now());
+                PostLikedEvent event = new PostLikedEvent(
+                        UUID.randomUUID().toString(),
+                        postId,
+                        userId,
+                        post.getUserId(),
+                        LocalDateTime.now());
 
                 // 5. Publish event to Kafka
                 postEventProducer.publishPostLiked(event);
@@ -69,13 +73,14 @@ public class PostLikeServiceImpl implements PostLikeService {
         postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found with id: " + postId));
 
-        long likeCount = getCachedLikeCount(postId);
+        long likeCount = getLikeCount(postId);
         boolean likedByCurrentUser = postLikeRepository.existsByPostIdAndUserId(postId, userId);
         return new PostLikeResponse(postId, likeCount, likedByCurrentUser);
     }
 
     @Cacheable(value = "postLikeCounts", key = "#postId")
-    public long getCachedLikeCount(Long postId) {
+    @Transactional(readOnly = true)
+    public long getLikeCount(Long postId) {
         return postLikeRepository.countByPostId(postId);
     }
 }
