@@ -8,6 +8,7 @@ import io.jsonwebtoken.security.Keys;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -15,13 +16,11 @@ import java.nio.charset.StandardCharsets;
 @Service
 public class JwtService {
 
-    @Value("${jwt.secret}")
+    @Value("${jwt-secreteKey}")
     private String secret;
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(
-                secret.getBytes(StandardCharsets.UTF_8)
-        );
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     public Long getUserIdFromAccessToken(String token) {
@@ -31,8 +30,7 @@ public class JwtService {
                 .parseSignedClaims(token)
                 .getPayload();
 
-        if (!"ACCESS".equals(
-                claims.get("tokenType", String.class))) {
+        if (!"ACCESS".equals(claims.get("tokenType", String.class))) {
             throw new JwtException("Not an access token");
         }
 

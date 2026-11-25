@@ -25,10 +25,10 @@ spring:
               predicates:
                 - Path=/api/posts/**
 
-            - id: feed-service
-              uri: lb://POST-SERVICE
+            - id: notification-service
+              uri: lb://NOTIFICATION-SERVICE
               predicates:
-                - Path=/api/feed/**
+                - Path=/api/notification/**
 
             - id: connection-service
               uri: lb://CONNECTION-SERVICE
@@ -42,4 +42,4 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
 
-jwt-secreteKey: ${JWT_SECRET}
+jwt_secret: ${JWT_SECRET}

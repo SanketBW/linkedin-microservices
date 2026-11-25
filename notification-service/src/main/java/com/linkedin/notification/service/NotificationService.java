@@ -1,12 +1,20 @@
 package com.linkedin.notification.service;
 
+import com.linkedin.notification.dto.NotificationResponse;
 import com.linkedin.notification.entity.Notification;
 import com.linkedin.notification.enums.NotificationType;
 import com.linkedin.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.errors.ResourceNotFoundException;
+import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 
@@ -17,13 +25,14 @@ import java.time.LocalDateTime;
 public class NotificationService {
 
     private final NotificationRepository repository;
+    private final ModelMapper modelMapper;
 
     public void record(String eventId, Long recipientId, Long actorId, NotificationType type, Long referenceId, LocalDateTime createdAt)
     {
         if (eventId == null || recipientId == null || actorId == null || type == null) {
             throw new IllegalArgumentException("Invalid notification event data");
         }
-
+        // prevent self notification
         if (recipientId.equals(actorId)) {
             return;
         }
@@ -55,7 +64,28 @@ public class NotificationService {
         log.info("Deleted notifications for userId={}", userId);
     }
 
-    // TODO: Implement JWT, API's to retrieve notifications, (mark individual/all notifications as read) & more
+    @Transactional(readOnly = true)
+    public Page<NotificationResponse> getNotifications(Long recipientId, Pageable pageable) {
+        Pageable safePageable = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), 100));
+        return repository.findAllByRecipientIdOrderByCreatedAtDesc(recipientId, safePageable)
+                .map(notification -> modelMapper.map(notification, NotificationResponse.class));
+    }
 
+    @Transactional
+    public void deleteNotification(Long notificationId, Long recipientId){
+        Notification notification = repository.findByIdAndRecipientId(notificationId, recipientId)
+                .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Notification not found with id: " + notificationId));
+
+        repository.delete(notification);
+    }
+
+    @Transactional
+    public void markAsRead(Long notificationId){
+        Notification notification = repository.findById(notificationId).
+                orElseThrow(()-> new ResourceNotFoundException("Notification Not Found!" + notificationId));
+        notification.setRead(true);
+        repository.save(notification);
+    }
 
 }
