@@ -1,26 +1,22 @@
 package com.linkedin.connection.service;
 
 import com.linkedin.connection.dto.ConnectionResponse;
-import com.linkedin.connection.dto.NetworkConnection;
 import com.linkedin.connection.payload.PageResponse;
-
-import java.util.List;
+import org.springframework.data.domain.Pageable;
 
 public interface ConnectionService {
 
-    ConnectionResponse sendRequest(Long senderId, Long receiverId);
+    ConnectionResponse sendRequest(Long senderId, Long receiverId, String token);
 
     ConnectionResponse acceptRequest(Long connectionId, Long userId);
 
     ConnectionResponse rejectRequest(Long connectionId, Long userId);
 
-    PageResponse<ConnectionResponse> getReceivedRequests(Long userId, int page, int size);
+    PageResponse<ConnectionResponse> getReceivedRequests(Long userId, Pageable pageable);
 
-    PageResponse<ConnectionResponse> getSentRequests(Long userId, int page, int size);
+    PageResponse<ConnectionResponse> getSentRequests(Long userId, Pageable pageable);
 
-    PageResponse<ConnectionResponse> getConnections(Long userId, int page, int size);
-
-    List<NetworkConnection> getNetworkConnections(Long userId);
+    PageResponse<ConnectionResponse> getConnections(Long userId, Pageable pageable);
 
     void removeConnection(Long connectionId, Long userId);
 }

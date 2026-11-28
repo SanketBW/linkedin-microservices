@@ -7,6 +7,8 @@ import com.linkedin.connection.payload.PageResponse;
 import com.linkedin.connection.service.ConnectionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,9 +22,10 @@ public class ConnectionController {
     private final ConnectionService connectionService;
 
     @PostMapping("/request")
-    public ResponseEntity<ConnectionResponse> sendRequest(@Valid @RequestBody SendConnectionRequest request, Authentication auth) {
+    public ResponseEntity<ConnectionResponse> sendRequest(@Valid @RequestBody SendConnectionRequest request, Authentication auth,
+                                                          @RequestHeader("Authorization") String token) {
         Long senderId = Long.valueOf(auth.getName());
-        ConnectionResponse response = connectionService.sendRequest(senderId, request.getReceiverId());
+        ConnectionResponse response = connectionService.sendRequest(senderId, request.getReceiverId(), token);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -43,7 +46,8 @@ public class ConnectionController {
                                                                                 @RequestParam(defaultValue = "0") int page,
                                                                                 @RequestParam(defaultValue = "10") int size) {
         Long userId = Long.valueOf(auth.getName());
-        return ResponseEntity.ok(connectionService.getReceivedRequests(userId, page, size));
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(connectionService.getReceivedRequests(userId, pageable));
     }
 
     @GetMapping("/requests/sent")
@@ -52,7 +56,8 @@ public class ConnectionController {
             @RequestParam(defaultValue = "10") int size) {
 
         Long userId = Long.valueOf(auth.getName());
-        return ResponseEntity.ok(connectionService.getSentRequests(userId, page, size));
+        Pageable pageable =PageRequest.of(page,size);
+        return ResponseEntity.ok(connectionService.getSentRequests(userId, pageable));
     }
 
     @GetMapping
@@ -61,7 +66,8 @@ public class ConnectionController {
             @RequestParam(defaultValue = "10") int size) {
 
         Long userId = Long.valueOf(auth.getName());
-        return ResponseEntity.ok(connectionService.getConnections(userId, page, size));
+        Pageable pageable = PageRequest.of(page,size);
+        return ResponseEntity.ok(connectionService.getConnections(userId, pageable));
     }
 
     @DeleteMapping("/{connectionId}")
