@@ -64,17 +64,9 @@ public class ConnectionServiceImpl implements ConnectionService {
                         throw new ConflictException("A connection request already exists");
 
                     // Reuse rejected request :
-                    //Sender: User A (10)
-                    //Receiver: User B (20)
-                    //
-                    //PENDING
-                    //
-                    //User B rejects the request.
-                    //REJECTED
-                    //
-                    //Now, User A wants to send another connection request to User B.
-                    //
-                    //Your code finds the existing rejected db record:
+                    // User A send the request to User B, suppose User B reject the request and User A again wants to
+                    // send connection request to User B then this code finds the existing rejected record...
+
                     existing.setSenderId(senderId);
                     existing.setReceiverId(receiverId);
                     existing.setStatus(ConnectionStatus.PENDING);
